@@ -1,0 +1,107 @@
+---------------------------------------
+My struggles with BASH. (Polish only)
+---------------------------------------
+For English speaking user:
+"ZLE" means: don't use this practice, because it is not working at all, or is troublemaking
+"DOBRZE" means: better version of above practive. You should use this pattern.
+Rest is in Polish, as I mentioned
+--------------------------------------
+
+QTH_LOCATOR_PATTERN="[A-Za-z][A-Za-z][0-9][0-9][A-Za-z][A-Za-z]"
+if [[ "$1" =~ $QTH_LOCATOR_PATTERN ]]
+
+ZLE:
+if [[ "$1" =~ "regEx" ]]
+if [[ "$1" =~ [a-z]\* ]]
+[[ string =~ #ng ]]
+
+DOBRZE:
+if [[ "$1" =~ regex ]]
+if [[ "$1" =~ [a-z]* ]]
+[[ string =~ \#ng ]]		# bo wszystko od tego znaku (#) stanowi komentarz
+
+
+ZLE:
+let "ONE_PERCENT_IS=$ROUNDS/100"
+DOBRZE:
+let "ONE_PERCENT_IS = $ROUNDS / 100"
+
+ZLE:
+let i = 0
+DOBRZE
+let i=0
+
+ZLE:
+for VAR in 1..10
+DOBRZE:
+for VAR in {1..10}
+
+
+ZLE: // w zmiennej RESULT bedzie caly stdout polecenia, a wiec WIELE slow
+// oddzielonych spacjami. natomiast if dziala tylko, jezeli dostanie jedno slowo
+// inaczej sie wywali !! po podstawieniu dostaniemy: if [ AB ASD WER -eq 74 ]
+RESULT=`cat files/activator-log.csv | wc `
+if [ ${RESULT} -eq 74 ]
+DOBRZE:
+RESULT=`cat files/activator-log.csv | wc -l`
+if [ ${RESULT} -eq 74 ]
+NAJLEPIEJ: // bo zawsze zredukuje liczbe slow na wyjsciu do jednego
+// jeszcze potrzebujemy tylko sprawdzenia czy wynik jest liczba
+// zeby bezpiecznie przekazac go do ifa
+RESULT=`cat files/activator-log.csv | wc -l`
+RESULT=`echo $RESULT | awk '{print $1}' `
+if [ ${RESULT} -eq 74 ]
+
+ZLE
+TMP_FILE2=/tmp/$(mktemp tmp.${0}_XXXXXXXXXX)
+// jesli nazwa skryptu czyli ${0} bedzie wywolana tak ./skrypt
+// to dojdzie do proby wykonania polecenia mktemp tmp../skrypt
+// ktore nie wykona sie prawidlowo, gdyz bedzie chchialo utworzyc 
+// plik 'skrypt' w katalogu tmp.., ktorego nie ma
+
+ZLE
+[ "1"="0" ]; echo $? // wypisze 0 czyli true!
+DOBRZE
+[ "1" = "0" ]; echo $? // wypisze 1 czyli false
+Wyjasnienie:
+[ "string" ]; echo $? // wypisze 0 czyli true, bo string nie jest pusty!
+[ "" ]; echo $? //  wypisze false
+[ ]; echo $? //  wypisze false
+[  ] ] && echo PRAWDA // wypisze PRAWDA, bo uzna "]" za niepusty string
+[  OLA ] && echo PRAWDA // wypisze PRAWDA, bo uzna "OLA" za niepusty string
+
+ZLE
+touch ../dir/dir/file
+DOBRZE
+mkdir -p ../dir/dir
+touch ../dir/dir/file
+// to ze widzimy ze pliku nie ma i trza go utworzyc to nie wszystko.
+// plik zawsze jest tworzoy w jakiejs lokalizacji. a czy ta lokalizacja istnieje
+// ? jest utworzona struktura katalogow nad plikiem? sprawdzmy to ifem
+// albo profilaktycznie ja utworzmy
+
+ZLE
+[  ] && echo OK; echo RR // dziala jak ( [  ] && echo OK; ) echo RR
+DOBRZE
+[  ] && ( echo OK; echo RR; ) // nic nie wypisze jak true
+
+ZLE
+cd abc
+. script
+cd -
+DOBRZE
+original_dir=$(pwd)
+cd abc
+. script
+cd $original_dir
+// nigdy nie wiesz czy skrypt, ktory uruchamia sie pomiedzy cd abc, a "cd -" nie zmienil katalogu w miedzy czasie
+// nawet jak zmienil i ustawil z powrotem wlasciwy, to 'cd -' da juz inny wynik: ten katalog, ktory ustawiono
+// wewnatrz 'script'
+
+ZLE
+// 100 of ways ;)
+DOBRZE
+#!/bin/bash
+SCRIPT_DIR="$(dirname $(readlink -e $0))"
+// so, only at the beggining of the script. more striclty - before you change directory for first time
+BASE_DIR="$(dirname \"$SCRIPT_NAME\")
