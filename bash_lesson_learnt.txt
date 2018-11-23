@@ -105,3 +105,34 @@ DOBRZE
 SCRIPT_DIR="$(dirname $(readlink -e $0))"
 // so, only at the beggining of the script. more striclty - before you change directory for first time
 BASE_DIR="$(dirname \"$SCRIPT_NAME\")
+
+ZLE
+// jezeli plik $file_name nie istnieje to wykona sie: do_"$action", ominiete zostanie  [ ! -w "$file_name" ]
+// i jako ze status ostatnio wykonanego polecenia ( do_"$action" ) byl zero, to wykona sie
+//&& echo "$0: Error: Can not write to file". pomimo, ze warunek  [ ! -w "$file_name" ] wcale nie jest nigdy
+// sprawdzany,bo jest po ||, a nie bylo faila! czy && echo "$0: Error:" jest w kazdym przypadku prawdziwe!
+[ ! -f "$file_name" ] && do_"$action" ||   [ ! -w "$file_name" ] && echo "$0: Error: Can not write to file" 
+DOBRZE
+[ ! -f "$file_name" ] && do_"$action" || ( [ ! -w "$file_name" ] && echo "$0: Error: Can not write to file" )
+// zastosowanie nawiasow ( ) grupuje komendy i ladnie dziala, jak oczekujemy.
+// czyli gdy pierwszy test da true, to do drugiego nie dojdzie. tylko gdy pierwszy da false, to jest 
+// wykonywany drugi test i w zaleznosci od jego wyniku jest wypisane && 'echo "$0: Error:' albo nie
+
+
+(read a ; read b;  echo A $a B $b) < ChangeLog
+(read a ; read b < /dev/stdin;  echo A $a B $b) < ChangeLog
+DOBRZE
+(read a ; read b  0>&2; echo A $a B $b) < ChangeLog
+// dzieki temu jak caly program ma stdin przekierowane, bo czyta z pliku czy rurki, to mozemy pojedyncze
+polecenia zmusic do czytania z konsoli jako stdin, a nie pliku. tylko musimy gdzies miec dostepna
+ta konsole, tzn jakis fd otwarty przez program musi na nia wskazywac.
+tutaj przekierowalismy tylko stdout do stdin, ale stderr dalej wysyla na konsole, wiec podlaczamy sie
+tam gdzie on :) i mozemy czytac z konsoli. to wlasnie robi 0>&2. "dowiaz fd 0 komendy przed toba 
+tam gdzie wskazuje df 2 (czyli na /dev/pty2)
+Liste df procesu mozemy wyswietlic:
+rob@vps:tools$ ls -l /proc/$$/fd
+total 0
+lrwx------ 1 rob robxt 64 Nov 17 06:09 0 -> /dev/pts/3
+lrwx------ 1 rob robxt 64 Nov 17 06:09 1 -> /dev/pts/3
+lrwx------ 1 rob robxt 64 Nov 17 06:09 2 -> /dev/pts/3
+lrwx------ 1 rob robxt 64 Nov 17 06:09 255 -> /dev/pts/3
